@@ -1,0 +1,23 @@
+# Macros
+CC = gcc217
+# CC = gcc217m
+CFLAGS =
+# CFLAGS = -g
+# CFLAGS = -D NDEBUG
+# CFLAGS = -D NDEBUG -O
+
+# Dependency rules for non-file targets
+all: testsymtable
+clobber: clean
+rm -f *~ \#*\#
+clean:
+rm -f testsymtable *.o
+
+# Dependency rules for non-file targets
+
+testsymtable: testsymtable.o symtablelist.o
+$(CC) &(CFLAGS) testsymtable.o symtablelist.o -o testsymtable
+testsymtable.o: testsymtable.c symtable.h
+&(CC) &(CFLAGS) -c testsymtable.c
+symtablelist.o: symtablelist.c symtable.h
+$(CC) &(CFLAGS) -c tablein.c
