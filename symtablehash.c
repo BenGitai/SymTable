@@ -267,15 +267,18 @@ static void SymTable_resize(SymTable_T oSymTable) {
       }
    }
 
-   /* Rehash existing nodes into the new bucket array */
+    /* Rehash existing nodes into the new bucket array */
     for (i = 0; i < oSymTable->uBucketCount; i++) {
         SymTableList_T oOldList = oSymTable->apsBuckets[i];
         struct SymTableNode *psCurrent = oOldList->psFirstNode;
 
         while (psCurrent != NULL) {
             size_t uNewHash = SymTable_hash(psCurrent->pcKey, uNewBucketCount);
-            /* Direct insertion into the new list to avoid put/resize recursion */
+            
+            /* We call our list put, but we MUST NOT let it affect 
+            the overall table length again, because the nodes already exist. */
             SymTableList_put(apsNewBuckets[uNewHash], psCurrent->pcKey, psCurrent->pvValue);
+            
             psCurrent = psCurrent->psNextNode;
         }
         
@@ -283,10 +286,10 @@ static void SymTable_resize(SymTable_T oSymTable) {
         SymTableList_free(oOldList);
     }
 
-   /* Update the original SymTable struct */
-   free(oSymTable->apsBuckets);
-   oSymTable->apsBuckets = apsNewBuckets;
-   oSymTable->uBucketCount = uNewBucketCount;
+    /* Update the original SymTable struct */
+    free(oSymTable->apsBuckets);
+    oSymTable->apsBuckets = apsNewBuckets;
+    oSymTable->uBucketCount = uNewBucketCount;
 }
 
 /* Initialize a hash table */
