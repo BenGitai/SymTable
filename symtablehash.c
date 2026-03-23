@@ -8,10 +8,15 @@
 static const size_t AU_BUCKET_COUNTS[] = 
    {509, 1021, 2039, 4093, 8191, 16381, 32749, 65521};
 
+/* Number of bucket sizes */
+static const size_t U_BUCKET_COUNTS = 8;
+
 /* SymTableList struct used in linked lists */
 typedef struct SymTableList *SymTableList_T;
 
-/* Hash function, given by assignment */
+/* Hash function, given by assignment
+* Takes a key (pcKey) and the number of buckets (uBucketCount),
+* returns the hash index */
 static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 {
    const size_t HASH_MULTIPLIER = 65599;
@@ -32,14 +37,19 @@ static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 struct SymTable {
    /* An array of pointers to SymTableNodes */
    SymTableList_T *apsBuckets; 
+   /* The number of buckets in the table */
    size_t uBucketCount;
+    /* The number of nodes in the table */
    size_t uLength;
 };
 
 /* Each node in the linked list (same as symtablelist.c) */
 struct SymTableNode {
-    char *pcKey;          /* Must be a defensive copy */
-    void *pvValue;        /* The value associated with the key */
+    /* The key for this node */
+    char *pcKey;
+    /* The value associated with the key */
+    void *pvValue;
+    /* Pointer to the next node in the list */
     struct SymTableNode *psNextNode;
 };
 
@@ -50,7 +60,8 @@ struct SymTableList {
 };
 
 /* Static method for searching in the SymTableList
- * Same as in symtablelist.c */
+ * Takes in both the symbol table (oSymTable) and the key to search for (pcKey)
+ * Returns a pointer to the node if found, NULL otherwise */
 static struct SymTableNode *SymTable_findNode(SymTableList_T oSymTable, const char *pcKey) {
     struct SymTableNode *psCurrent;
 
@@ -72,7 +83,8 @@ static struct SymTableNode *SymTable_findNode(SymTableList_T oSymTable, const ch
 /* Static version of linked list functions: 
  * All same implementation as simtablelist.c */
 
-/* New linked list */
+/* New linked list
+* Returns a pointer to the new linked list */
 static SymTableList_T SymTableList_new(void) {
     SymTableList_T oSymTable;
 
@@ -88,7 +100,8 @@ static SymTableList_T SymTableList_new(void) {
     return oSymTable;
 }
 
-/* Free linked list */
+/* Free linked list 
+* Takes a pointer to the linked list to free */
 static void SymTableList_free(SymTableList_T oSymTable) {
     struct SymTableNode *psCurrentNode;
     struct SymTableNode *psNextNode;
@@ -108,7 +121,9 @@ static void SymTableList_free(SymTableList_T oSymTable) {
     free(oSymTable);
 }
 
-/* Put in a linked list */
+/* Put in a linked list
+ * Takes a pointer to the linked list (oSymTable), a key (pcKey), and a value (pvValue)
+ * Returns 1 if successful, 0 otherwise */
 static int SymTableList_put(SymTableList_T oSymTable, const char *pcKey, const void *pvValue) {
     struct SymTableNode *psNewNode;
 
@@ -143,7 +158,9 @@ static int SymTableList_put(SymTableList_T oSymTable, const char *pcKey, const v
     return 1;
 }
 
-/* Replace the value of a node in a linked list */
+/* Replace the value of a node in a linked list
+* Takes a pointer to the linked list (oSymTable), a key (pcKey), and a value (pvValue)
+* Returns the old value if successful, NULL otherwise */
 static void *SymTableList_replace(SymTableList_T oSymTable, const char *pcKey, const void *pvValue) {
     struct SymTableNode *psNode;
     void *pvOldValue;
@@ -162,7 +179,9 @@ static void *SymTableList_replace(SymTableList_T oSymTable, const char *pcKey, c
     return pvOldValue;
 }
 
-/* Check if a linked list contains a key */
+/* Check if a linked list contains a key
+* Takes a pointer to the linked list (oSymTable) and a key (pcKey)
+* Returns 1 if the key is found, 0 otherwise */
 static int SymTableList_contains(SymTableList_T oSymTable, const char *pcKey) {
     assert(oSymTable != NULL);
     assert(pcKey != NULL);
@@ -170,7 +189,9 @@ static int SymTableList_contains(SymTableList_T oSymTable, const char *pcKey) {
     return (SymTable_findNode(oSymTable, pcKey) != NULL);
 }
 
-/* Get the value of a node in a linked list */
+/* Get the value of a node in a linked list
+ * Takes a pointer to the linked list (oSymTable) and a key (pcKey)
+ * Returns a pointer to the value if found, NULL otherwise */
 static void *SymTableList_get(SymTableList_T oSymTable, const char *pcKey) {
     struct SymTableNode *psNode;
 
@@ -185,7 +206,9 @@ static void *SymTableList_get(SymTableList_T oSymTable, const char *pcKey) {
     return (void *)psNode->pvValue;
 }
 
-/* Remove a node from a linked list */
+/* Remove a node from a linked list
+* Takes a pointer to the linked list (oSymTable) and a key (pcKey)
+* Returns a pointer to the value if found, NULL otherwise */
 static void *SymTableList_remove(SymTableList_T oSymTable, const char *pcKey) {
     struct SymTableNode *psCurrent;
     struct SymTableNode *psPrev = NULL;
@@ -219,7 +242,9 @@ static void *SymTableList_remove(SymTableList_T oSymTable, const char *pcKey) {
     return NULL;
 }
 
-/* Map an entire linked list */
+/* Map an entire linked list
+* Takes a pointer to the linked list (oSymTable), a function pointer (pfApply), and a pointer to extra data (pvExtra)
+* Returns nothing */
 static void SymTableList_map(SymTableList_T oSymTable,
         void (*pfApply)(const char *pcKey, void *pvValue, void *pvExtra),
         const void *pvExtra) {
@@ -235,7 +260,9 @@ static void SymTableList_map(SymTableList_T oSymTable,
     }
 }
 
-/* Helper function: Resize a hashed Symbol Table */
+/* Helper function: Resize a hashed Symbol Table
+* Takes a pointer to the symbol table (oSymTable)
+* Returns nothing */
 static void SymTable_resize(SymTable_T oSymTable) {
    size_t uNewBucketCount;
    size_t i;
@@ -245,14 +272,14 @@ static void SymTable_resize(SymTable_T oSymTable) {
    assert(oSymTable != NULL);
 
    /* Find the next size */
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < U_BUCKET_COUNTS; i++) {
         if (AU_BUCKET_COUNTS[i] == oSymTable->uBucketCount) {
             uCurrentCountIndex = i;
             break;
         }
     }
 
-   if (uCurrentCountIndex >= 7) return;
+   if (uCurrentCountIndex >= U_BUCKET_COUNTS - 1) return;
    uNewBucketCount = AU_BUCKET_COUNTS[uCurrentCountIndex + 1];
 
    /* Allocate the new array of buckets */
@@ -292,7 +319,8 @@ static void SymTable_resize(SymTable_T oSymTable) {
     oSymTable->uBucketCount = uNewBucketCount;
 }
 
-/* Initialize a hash table */
+/* Initialize a hash table
+* Returns a pointer to the new hash table or NULL on failure */
 SymTable_T SymTable_new(void) {
     SymTable_T oSymTable;
     size_t i = 0;
@@ -336,7 +364,9 @@ SymTable_T SymTable_new(void) {
     return oSymTable;
 }
 
-/* Free a hash table */
+/* Free a hash table
+* Takes a pointer to the symbol table (oSymTable)
+* Returns nothing */
 void SymTable_free(SymTable_T oSymTable) {
     size_t i = 0;
 
@@ -352,7 +382,9 @@ void SymTable_free(SymTable_T oSymTable) {
     free(oSymTable);
 }
 
-/* Return the length of a hash table */
+/* Return the length of a hash table
+* Takes a pointer to the symbol table (oSymTable)
+* Returns the length of the table */
 size_t SymTable_getLength(SymTable_T oSymTable) {
     assert(oSymTable != NULL);
 
@@ -385,7 +417,8 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey, const void *pvValue) {
     return(iResult);
 }
 
-/* Replace the value of a key, return the old value or null if no key */
+/* Replace the value of a key (pcKey) and a new value (pvValue)
+* return the old value or null if no key */
 void *SymTable_replace(SymTable_T oSymTable, const char *pcKey, const void *pvValue) {
     size_t hash;
     assert(oSymTable != NULL);
@@ -398,7 +431,9 @@ void *SymTable_replace(SymTable_T oSymTable, const char *pcKey, const void *pvVa
     return(SymTableList_replace(oSymTable->apsBuckets[hash], pcKey, pvValue));
 }
 
-/* Check if a table contains a key, 0 if it doesn't, 1 if it does */
+/* Check if a table contains a key
+ * Takes a pointer to the symbol table (oSymTable) and a key (pcKey)
+ * Returns 1 if the key is found, 0 otherwise */
 int SymTable_contains(SymTable_T oSymTable, const char *pcKey) {
     size_t hash;
     
@@ -412,7 +447,9 @@ int SymTable_contains(SymTable_T oSymTable, const char *pcKey) {
     return(SymTableList_contains(oSymTable->apsBuckets[hash], pcKey));
 }
 
-/* Get the value of a key */
+/* Get the value of a key
+* Takes a pointer to the symbol table (oSymTable) and a key (pcKey)
+* Returns a pointer to the value if found, NULL otherwise */
 void *SymTable_get(SymTable_T oSymTable, const char *pcKey) {
     size_t hash;
 
@@ -424,7 +461,9 @@ void *SymTable_get(SymTable_T oSymTable, const char *pcKey) {
     return SymTableList_get(oSymTable->apsBuckets[hash], pcKey);
 }
 
-/* Remove a node from the table, return NULL if failed, return the old value if success */
+/* Remove a node from the table
+* Takes a pointer to the symbol table (oSymTable) and a key (pcKey)
+* return NULL if failed, return the old value if success */
 void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
     size_t hash;
     void *vpResult;
@@ -445,7 +484,9 @@ void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
     return vpResult;
 }
 
-/* Apply a map to all values in the table */
+/* Apply a map to all values in the table
+ * Takes a pointer to the symbol table (oSymTable), a function pointer (pfApply), and a pointer to extra data (pvExtra)
+ * Returns nothing */
 void SymTable_map(SymTable_T oSymTable,
         void (*pfApply)(const char *pcKey, void *pvValue, void *pvExtra),
         const void *pvExtra) {

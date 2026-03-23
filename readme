@@ -92,7 +92,15 @@ disagreements with them? Copy the splint warnings here, and express your
 disagreement after each warning. If there are no warnings, then write
 "None."
 
+symtablehash.c: (in function SymTable_resize)
+symtablehash.c:280:30: Value apsNewBuckets[] used before definition
+  An rvalue is used that may not be initialized to a value on some execution
+  path. (Use -usedef to inhibit warning)
 
+Finished checking --- 1 code warning
+
+I do initialize the sym table buckets earlier so I don't know why this
+happens.
 
 ------------------------------------------------------------------------
 What warnings does critTer generate on symtablehash.c, and what are your
