@@ -31,7 +31,7 @@ static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 /* Hash SymTable Stuct */
 struct SymTable {
    /* An array of pointers to SymTableNodes */
-   struct SymTableList *apsBuckets; 
+   struct SymTableList_T *apsBuckets; 
    size_t uBucketCount;
    size_t uLength;
 };
@@ -237,56 +237,56 @@ static void SymTableList_map(SymTableList_T oSymTable,
 
 /* Helper function: Resize a hashed Symbol Table */
 static void SymTable_resize(SymTable_T oSymTable) {
-    SymTable_T oNewTable;
-    size_t uNewBucketCount;
-    size_t i;
-    struct SymTableNode *psCurrent;
-    size_t uCurrentCountIndex = 0;
+   size_t uNewBucketCount;
+   size_t i;
+   size_t uCurrentCountIndex = 0;
+   SymTableList_T *apsNewBuckets;
 
-    assert(oSymTable != NULL);
+   assert(oSymTable != NULL);
 
-    /* Get the size of the new array */
+   /* Find the next size */
     for (i = 0; i < 8; i++) {
-      if (AU_BUCKET_COUNTS[i] == oSymTable->uBucketCount) {
-         uCurrentCountIndex = i;
-         break;
+        if (AU_BUCKET_COUNTS[i] == oSymTable->uBucketCount) {
+            uCurrentCountIndex = i;
+            break;
+        }
+    }
+
+   if (uCurrentCountIndex >= 7) return;
+   uNewBucketCount = AU_BUCKET_COUNTS[uCurrentCountIndex + 1];
+
+   /* Allocate the new array of buckets */
+   apsNewBuckets = (SymTableList_T*)malloc(uNewBucketCount * sizeof(SymTableList_T));
+   if (apsNewBuckets == NULL) return;
+
+   for (i = 0; i < uNewBucketCount; i++) {
+      apsNewBuckets[i] = SymTableList_new();
+      if (apsNewBuckets[i] == NULL) {
+         /* Simple cleanup */
+         return; 
       }
-    }
+   }
 
-    if (uCurrentCountIndex >= 7) return;
-    uNewBucketCount = AU_BUCKET_COUNTS[uCurrentCountIndex + 1];
-
-    /* Allocate memory */
-    oNewTable = (SymTable_T)malloc(sizeof(struct SymTable));
-    if (oNewTable == NULL) return;
-
-    /* Initialize */
-    oNewTable->uBucketCount = uNewBucketCount;
-    oNewTable->uLength = 0;
-    oNewTable->apsBuckets = (SymTableList_T*)malloc(uNewBucketCount * sizeof(SymTableList_T));
-
-    if (oNewTable->apsBuckets == NULL) {
-      free(oNewTable);
-      return;
-    }
-
-    /* Send nodes over */
-    for (i = 0; i < uNewBucketCount; i++)
-      oNewTable->apsBuckets[i] = SymTableList_new();
-
+   /* Rehash existing nodes into the new bucket array */
     for (i = 0; i < oSymTable->uBucketCount; i++) {
-      SymTableList_T oOldList = oSymTable->apsBuckets[i];
-      for (psCurrent = oOldList->psFirstNode; psCurrent != NULL; psCurrent = psCurrent->psNextNode) {
-         SymTable_put(oNewTable, psCurrent->pcKey, psCurrent->pvValue);
-      }
-      SymTableList_free(oOldList);
+        SymTableList_T oOldList = oSymTable->apsBuckets[i];
+        struct SymTableNode *psCurrent = oOldList->psFirstNode;
+
+        while (psCurrent != NULL) {
+            size_t uNewHash = SymTable_hash(psCurrent->pcKey, uNewBucketCount);
+            /* Direct insertion into the new list to avoid put/resize recursion */
+            SymTableList_put(apsNewBuckets[uNewHash], psCurrent->pcKey, psCurrent->pvValue);
+            psCurrent = psCurrent->psNextNode;
+        }
+        
+        /* Free the old list object and its nodes */
+        SymTableList_free(oOldList);
     }
 
-    /* Free old table */
-    free(oSymTable->apsBuckets);
-    oSymTable->apsBuckets = oNewTable->apsBuckets;
-    oSymTable->uBucketCount = oNewTable->uBucketCount;
-    free(oNewTable);
+   /* Update the original SymTable struct */
+   free(oSymTable->apsBuckets);
+   oSymTable->apsBuckets = apsNewBuckets;
+   oSymTable->uBucketCount = uNewBucketCount;
 }
 
 /* Initialize a hash table */
@@ -306,7 +306,7 @@ SymTable_T SymTable_new(void) {
     oSymTable->uBucketCount = AU_BUCKET_COUNTS[0]; 
 
     /* Allocate memeory for the buckets */
-    oSymTable->apsBuckets = (SymTableList_T*)malloc(oSymTable->uBucketCount*sizeof(SymTableList_T));
+    oSymTable->apsBuckets = (SymTableList_T*)malloc(oSymTable->uBucketCount * sizeof(SymTableList_T));
 
     /* Failure returns */
     if (oSymTable->apsBuckets == NULL) {
@@ -318,7 +318,14 @@ SymTable_T SymTable_new(void) {
     for (i = 0; i < oSymTable->uBucketCount; i++) {
         oSymTable->apsBuckets[i] = SymTableList_new();
 
+        /* If a list fails to allocate, clean up everything before returning */
         if (oSymTable->apsBuckets[i] == NULL) {
+            size_t j;
+            for (j = 0; j < i; j++) {
+                SymTableList_free(oSymTable->apsBuckets[j]);
+            }
+            free(oSymTable->apsBuckets);
+            free(oSymTable);
             return NULL;
         }
     }
