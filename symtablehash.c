@@ -31,7 +31,7 @@ static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 /* Hash SymTable Stuct */
 struct SymTable {
    /* An array of pointers to SymTableNodes */
-   struct SymTableList_T *apsBuckets; 
+   SymTableList_T *apsBuckets; 
    size_t uBucketCount;
    size_t uLength;
 };
