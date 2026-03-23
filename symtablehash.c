@@ -8,6 +8,9 @@
 static const size_t AU_BUCKET_COUNTS[] = 
    {509, 1021, 2039, 4093, 8191, 16381, 32749, 65521};
 
+/* SymTableList struct used in linked lists */
+typedef struct SymTableList *SymTableList_T;
+
 /* Hash function, given by assignment */
 static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 {
@@ -28,7 +31,7 @@ static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 /* Hash SymTable Stuct */
 struct SymTable {
    /* An array of pointers to SymTableNodes */
-   struct SymTableNode **apsBuckets; 
+   struct SymTableList *apsBuckets; 
    size_t uBucketCount;
    size_t uLength;
 };
@@ -147,7 +150,7 @@ static void *SymTableList_replace(SymTableList_T oSymTable, const char *pcKey, c
     assert(oSymTable != NULL);
     assert(pcKey != NULL);
 
-    psNode = SymTableList_findNode(oSymTable, pcKey);
+    psNode = SymTable_findNode(oSymTable, pcKey);
     if (psNode == NULL) {
         return NULL;
     }
@@ -234,64 +237,56 @@ static void SymTableList_map(SymTableList_T oSymTable,
 
 /* Helper function: Resize a hashed Symbol Table */
 static void SymTable_resize(SymTable_T oSymTable) {
-   size_t uNewBucketCount = 0;
-   size_t i;
-   SymTable_T oNewTable;
-   struct SymTableNode *psCurrent;
+    SymTable_T oNewTable;
+    size_t uNewBucketCount;
+    size_t i;
+    struct SymTableNode *psCurrent;
+    size_t uCurrentCountIndex = 0;
 
-   /* Find the next expansion size */
-   for (i = 0; i < 7; i++) {
-      if (oSymTable->uBucketCount == AU_BUCKET_COUNTS[i]) {
-         uNewBucketCount = AU_BUCKET_COUNTS[i + 1];
+    assert(oSymTable != NULL);
+
+    /* Get the size of the new array */
+    for (i = 0; i < 8; i++) {
+      if (AU_BUCKET_COUNTS[i] == oSymTable->uBucketCount) {
+         uCurrentCountIndex = i;
          break;
       }
-   }
+    }
 
-   /* do nothing at max size */
-   if (uNewBucketCount == 0) return;
+    if (uCurrentCountIndex >= 7) return;
+    uNewBucketCount = AU_BUCKET_COUNTS[uCurrentCountIndex + 1];
 
-   /* Create a temporary new table structure with the larger size */
-   oNewTable = (SymTable_t)malloc(sizeof(struct SymTable));
-   if (oNewTable == NULL) return;
+    /* Allocate memory */
+    oNewTable = (SymTable_T)malloc(sizeof(struct SymTable));
+    if (oNewTable == NULL) return;
 
-   oNewTable->uLength = 0;
-   oNewTable->uBucketCount = uNewBucketCount;
-   oNewTable->apsBuckets = (SymTableList_T*)
-      calloc(uNewBucketCount, sizeof(SymTableList_T));
+    /* Initialize */
+    oNewTable->uBucketCount = uNewBucketCount;
+    oNewTable->uLength = 0;
+    oNewTable->apsBuckets = (SymTableList_T*)malloc(uNewBucketCount * sizeof(SymTableList_T));
 
-   if (oNewTable->apsBuckets == NULL) {
+    if (oNewTable->apsBuckets == NULL) {
       free(oNewTable);
       return;
-   }
+    }
 
-   /* Initialize the new buckets */
-   for (i = 0; i < uNewBucketCount; i++)
+    /* Send nodes over */
+    for (i = 0; i < uNewBucketCount; i++)
       oNewTable->apsBuckets[i] = SymTableList_new();
 
-   /* Iterate through old buckets and put into new table */
-   for (i = 0; i < oSymTable->uBucketCount; i++) {
+    for (i = 0; i < oSymTable->uBucketCount; i++) {
       SymTableList_T oOldList = oSymTable->apsBuckets[i];
-      for (psCurrent = oOldList->psFirstNode;
-           psCurrent != NULL;
-           psCurrent = psCurrent->psNextNode) {
-
-          SymTable_put(oNewTable, psCurrent->pcKey, psCurrent->pvValue);
+      for (psCurrent = oOldList->psFirstNode; psCurrent != NULL; psCurrent = psCurrent->psNextNode) {
+         SymTable_put(oNewTable, psCurrent->pcKey, psCurrent->pvValue);
       }
-   }
+      SymTableList_free(oOldList);
+    }
 
-   /* Exchange the internal arrays and counts */
-   /* free the old list wrappers and the old array */
-   for (i = 0; i < oSymTable->uBucketCount; i++) {
-      SymTableList_free(oSymTable->apsBuckets[i]);
-   }
-   free(oSymTable->apsBuckets);
-
-   /* Point the old table to the new data */
-   oSymTable->apsBuckets = oNewTable->apsBuckets;
-   oSymTable->uBucketCount = oNewTable->uBucketCount;
-
-   /* Free the temporary container */
-   free(oNewTable);
+    /* Free old table */
+    free(oSymTable->apsBuckets);
+    oSymTable->apsBuckets = oNewTable->apsBuckets;
+    oSymTable->uBucketCount = oNewTable->uBucketCount;
+    free(oNewTable);
 }
 
 /* Initialize a hash table */
@@ -339,7 +334,7 @@ void SymTable_free(SymTable_T oSymTable) {
 
     /* Loop through buckets and free each linked list */
     for (i = 0; i < oSymTable->uBucketCount; i++) {
-        SymTableList_free(oSymTable->apsBuckets[i])
+        SymTableList_free(oSymTable->apsBuckets[i]);
     }
 
     /* Free the buckets and the table */
@@ -364,11 +359,11 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey, const void *pvValue) {
 
     /* Resize the table if necessary using the helper */
     if (oSymTable->uLength >= oSymTable->uBucketCount) {
-        resize(oSymTable);
+        SymTable_resize(oSymTable);
     }
 
     /* Calculate the hash value */
-    hash = SymTableHash(pcKey, oSymTable->uBucketCount);
+    hash = SymTable_hash(pcKey, oSymTable->uBucketCount);
 
     /* Put as a node in the associate linked list */
     iResult = SymTableList_put(oSymTable->apsBuckets[hash], pcKey, pvValue);
@@ -405,6 +400,18 @@ int SymTable_contains(SymTable_T oSymTable, const char *pcKey) {
 
     /* Use linked list contains for the associated bucket */
     return(SymTableList_contains(oSymTable->apsBuckets[hash], pcKey));
+}
+
+/* Get the value of a key */
+void *SymTable_get(SymTable_T oSymTable, const char *pcKey) {
+    size_t hash;
+
+    assert(oSymTable != NULL);
+    assert(pcKey != NULL);
+
+    hash = SymTable_hash(pcKey, oSymTable->uBucketCount);
+
+    return SymTableList_get(oSymTable->apsBuckets[hash], pcKey);
 }
 
 /* Remove a node from the table, return NULL if failed, return the old value if success */
