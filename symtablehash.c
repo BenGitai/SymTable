@@ -432,16 +432,16 @@ void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
     assert(oSymTable != NULL);
     assert(pcKey != NULL);
 
-    /* Calculate hash */
     hash = SymTable_hash(pcKey, oSymTable->uBucketCount);
 
-    /* Get the result using linked list and hash */
-    vpResult = (void *)SymTableList_remove(oSymTable->apsBuckets[hash], pcKey);
-
-    if (vpResult != NULL) {
-        oSymTable->uLength--; /* Decrement if something removed */
+    /* Check if it exists before removing so we can accurately update length */
+    if (!SymTableList_contains(oSymTable->apsBuckets[hash], pcKey)) {
+        return NULL;
     }
 
+    vpResult = SymTableList_remove(oSymTable->apsBuckets[hash], pcKey);
+    oSymTable->uLength--; 
+    
     return vpResult;
 }
 
