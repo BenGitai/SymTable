@@ -45,7 +45,7 @@ Regulations in Princeton's Rights, Rules, Responsibilities guide,
 and the COS 217 Generative AI policy, disclose and describe how you
 used AI in completing this assignment:
 
-None
+VS code autofill/bug finding for some type mismatches
 
 ------------------------------------------------------------------------
 What is your assessment of the assignment? Was it helpful? Was it fun?
@@ -65,7 +65,7 @@ disagreements with them? Copy the splint warnings here, and express your
 disagreement after each warning. If there are no warnings, then write
 "None."
 
-
+None
 
 ------------------------------------------------------------------------
 What warnings does critTer generate on symtablelist.c, and what are your
@@ -105,11 +105,11 @@ The linked list implementation with:
 -- 500000 bindings consumed Killed.
 
 The non-expanding hash table implementation with:
--- 50 bindings consumed ________ seconds.
--- 500 bindings consumed ________ seconds.
--- 5000 bindings consumed ________ seconds.
--- 50000 bindings consumed ________ seconds.
--- 500000 bindings consumed ________ seconds.
+-- 50 bindings consumed 0.00000 seconds.
+-- 500 bindings consumed 0.00000 seconds.
+-- 5000 bindings consumed 0.00138 seconds.
+-- 50000 bindings consumed 0.16993 seconds.
+-- 500000 bindings consumed 38.24247 seconds.
 
 The expanding hash table implementation with:
 -- 50 bindings consumed 0.00000 seconds.

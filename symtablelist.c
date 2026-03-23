@@ -1,4 +1,5 @@
 /* symtablelist.c */
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -8,16 +9,20 @@
 struct SymTableNode {
     char *pcKey;          /* Must be a defensive copy */
     void *pvValue;        /* The value associated with the key */
-    struct SymTableNode *psNextNode;
+    struct SymTableNode *psNextNode; /* Pointer to the next node in the list */
 };
 
 /* The Head structure that represents the table itself */
 struct SymTable {
+    /* The first node in the linked list */
     struct SymTableNode *psFirstNode;
+    /* The number of nodes in the list */
     size_t uLength;      
 };
 
-/* Static method for searching in the SymTable */
+/* Static method for searching in the SymTable
+* Takes in both the symbol table (oSymTable) and the key to search for (pcKey)
+* Returns a pointer to the node if found, NULL otherwise */
 static struct SymTableNode *SymTable_findNode(SymTable_T oSymTable, const char *pcKey) {
     struct SymTableNode *psCurrent;
 
