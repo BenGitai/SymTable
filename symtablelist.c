@@ -7,6 +7,7 @@
 
 /* Each node in the linked list */
 struct SymTableNode {
+    /* The key for this node */
     char *pcKey;          /* Must be a defensive copy */
     void *pvValue;        /* The value associated with the key */
     struct SymTableNode *psNextNode; /* Pointer to the next node in the list */

@@ -262,8 +262,8 @@ static void SymTable_resize(SymTable_T oSymTable) {
    for (i = 0; i < uNewBucketCount; i++) {
       apsNewBuckets[i] = SymTableList_new();
       if (apsNewBuckets[i] == NULL) {
-         /* Simple cleanup */
-         return; 
+            /* Simple cleanup */
+            return; 
       }
    }
 
@@ -388,8 +388,8 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey, const void *pvValue) {
 /* Replace the value of a key, return the old value or null if no key */
 void *SymTable_replace(SymTable_T oSymTable, const char *pcKey, const void *pvValue) {
     size_t hash;
-    assert(oSymTable != 0);
-    assert(pcKey != 0);
+    assert(oSymTable != NULL);
+    assert(pcKey != NULL);
 
     /* Calculate hash */
     hash = SymTable_hash(pcKey, oSymTable->uBucketCount);
