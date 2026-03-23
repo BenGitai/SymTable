@@ -46,6 +46,7 @@ and the COS 217 Generative AI policy, disclose and describe how you
 used AI in completing this assignment:
 
 VS code autofill/bug finding for some type mismatches
+Used to explain a splint error
 
 ------------------------------------------------------------------------
 What is your assessment of the assignment? Was it helpful? Was it fun?
@@ -108,7 +109,82 @@ disagreements with them? Copy the critTer warnings here, and express
 your disagreement after each warning. If there are no warnings, then
 write "None."
 
+Checking symtablehash.c
 
+   symtablehash.c: line 88: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_new does not match module name symtablehash.c
+
+   symtablehash.c: line 105: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_free does not match module name symtablehash.c
+
+   symtablehash.c: line 127: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_put does not match module name symtablehash.c
+
+   symtablehash.c: line 164: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_replace does not match module name symtablehash.c
+
+   symtablehash.c: line 185: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_contains does not match module name symtablehash.c
+
+   symtablehash.c: line 195: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_get does not match module name symtablehash.c
+
+   symtablehash.c: line 212: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_remove does not match module name symtablehash.c
+
+   symtablehash.c: line 250: medium priority:
+   Function names should be prefixed with module names;
+   function name SymTableList_map does not match module name symtablehash.c
+
+   symtablehash.c: line 502: low priority:
+   A file should contain no more than 15 functions;
+   this file contains 20 functions
+
+   symtablehash.c: line 103: high priority:
+   A function's comment should refer to each parameter by name;
+   your comment does not refer to 'oSymTable'
+
+   symtablehash.c: line 127: medium priority:
+   Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 164: medium priority:
+   Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 250: medium priority:
+   Do you want to validate 'pvExtra' through an assert?
+
+   symtablehash.c: line 395: medium priority:
+   Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 422: medium priority:
+   Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 492: medium priority:
+   Do you want to validate 'pvExtra' through an assert?
+
+   symtablehash.c: line 501: low priority:
+   A source code file should contain fewer than 500 lines;
+   this file contains 502 lines
+
+It's a lot but really there are only 3 catagories of thing being mentioned
+1. Module name, it wants it as a prefix but I have it as SymTableList_x
+instead. I did this because I didn't know the standard and now it would
+be a lot to change the rest, however I know for next time.
+
+2. Asserts, some things such as pvExtra and pvValue are allowed to be
+null so this isn't an issue
+
+3. Size, because I copy pasted the code since the hash code couldn't
+refer to the list code, it is a long program. Had I made everything
+myself, I would have had a seperate ADT for the linked list that
+I used in the hash table.
 
 ------------------------------------------------------------------------
 What are the CPU times reported by testsymtable.c with binding counts

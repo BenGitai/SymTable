@@ -55,7 +55,9 @@ struct SymTableNode {
 
 /* The "Head" structure that represents the table itself, used in linked list */
 struct SymTableList {
+    /* The first node in the linked list */
     struct SymTableNode *psFirstNode;
+    /* The number of nodes in the list */
     size_t uLength;
 };
 
